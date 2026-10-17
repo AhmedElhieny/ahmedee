@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#123653">
-    <title>بيان تشغيل إبوان</title>
+    <title>بيان مخزن إبوان</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -1221,7 +1221,7 @@
             const link = document.createElement("a");
 
             link.href = url;
-            link.download = "بيان-تشغيل-إبوان.png";
+            link.download = "بيان-مخزن-إبوان.png";
 
             document.body.appendChild(link);
             link.click();
@@ -1264,97 +1264,68 @@
             }
         }
 
-        async function shareWhatsApp() {
-            const button = document.getElementById("whatsappButton");
 
-            button.disabled = true;
-            setStatus("جارٍ تجهيز البيان للمشاركة...");
+async function shareWhatsApp() {
+    const button = document.getElementById("whatsappButton");
 
+    button.disabled = true;
+    setStatus("جارٍ تجهيز صورة البيان للمشاركة...");
+
+    try {
+        const canvas = await makeCanvas();
+        const blob = await canvasToBlob(canvas);
+
+        const file = new File(
+            [blob],
+            "بيان-مخزن-إبوان.png",
+            { type: "image/png" }
+        );
+
+        if (
+            navigator.share &&
+            navigator.canShare &&
+            navigator.canShare({ files: [file] })
+        ) {
             try {
-                const month =
-                    document.getElementById("monthInput").value;
-                const day =
-                    document.getElementById("dayInput").value;
+                // مشاركة الصورة فقط بدون عنوان أو رسالة نصية.
+                await navigator.share({
+                    files: [file]
+                });
 
-                const dateText = month && day
-                    ? "2026/" + month + "/" + day
-                    : month
-                        ? "2026/" + month
-                        : day
-                            ? "2026/--/" + day
-                            : "2026";
-
-                const message =
-                    "بيان تشغيل إبوان\n" +
-                    "التاريخ: " + dateText + "\n" +
-                    "مرفق صورة بيان التشغيل.";
-
-                const canvas = await makeCanvas();
-                const blob = await canvasToBlob(canvas);
-
-                const file = new File(
-                    [blob],
-                    "بيان-تشغيل-إبوان.png",
-                    { type: "image/png" }
-                );
-
-                if (
-                    navigator.share &&
-                    navigator.canShare &&
-                    navigator.canShare({ files: [file] })
-                ) {
-                    try {
-                        await navigator.share({
-                            title: "بيان تشغيل إبوان",
-                            text: message,
-                            files: [file]
-                        });
-
-                        clearEnteredData();
-                        return;
-                    } catch (error) {
-                        if (error.name === "AbortError") {
-                            setStatus(
-                                "تم إلغاء المشاركة، ولم يتم مسح البيانات."
-                            );
-                            return;
-                        }
-
-                        throw error;
-                    }
-                }
-
-                // بديل عند عدم دعم مشاركة الصور مباشرة.
-                downloadBlob(blob);
-
-                const whatsappUrl =
-                    "https://wa.me/?text=" +
-                    encodeURIComponent(message);
-
-                window.open(
-                    whatsappUrl,
-                    "_blank",
-                    "noopener,noreferrer"
-                );
-
-                alert(
-                    "تم تنزيل صورة البيان وفتح واتساب.\n" +
-                    "أرفق الصورة التي تم تنزيلها داخل المحادثة ثم أرسلها."
-                );
-
-                // لا نمسح البيانات قبل أن يرفق المستخدم الصورة بنفسه.
-                setStatus(
-                    "أرفق صورة البيان التي تم تنزيلها في واتساب."
-                );
+                setStatus("تم فتح نافذة المشاركة. اختر واتساب لإرسال الصورة.");
+                return;
 
             } catch (error) {
-                console.error(error);
-                setStatus(error.message || "تعذرت مشاركة البيان.");
-                alert(error.message || "حدث خطأ أثناء مشاركة البيان.");
-            } finally {
-                button.disabled = false;
+                if (error.name === "AbortError") {
+                    setStatus("تم إلغاء المشاركة، ولم يتم مسح البيانات.");
+                    return;
+                }
+
+                throw error;
             }
         }
+
+        // بديل للأجهزة أو المتصفحات التي لا تدعم مشاركة الملفات.
+        downloadBlob(blob);
+
+        setStatus(
+            "تم تنزيل الصورة. افتح واتساب وأرفق الصورة يدويًا."
+        );
+
+        alert(
+            "تم تنزيل صورة البيان.\n" +
+            "افتح واتساب وأرفق الصورة يدويًا لإرسالها بدون رسالة نصية."
+        );
+
+    } catch (error) {
+        console.error(error);
+        setStatus(error.message || "تعذرت مشاركة صورة البيان.");
+        alert(error.message || "حدث خطأ أثناء مشاركة الصورة.");
+    } finally {
+        button.disabled = false;
+    }
+}
+
     </script>
 
 </body>
